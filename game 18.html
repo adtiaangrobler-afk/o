@@ -1,0 +1,277 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ecape hugo in a maze of death .</title>
+    
+    <!-- CSS Styles Inlined Here -->
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 600px;
+            padding: 20px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #2a2a2a;
+        }
+
+        #game-text {
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            font-size: 16px;
+        }
+
+        #status-bar {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #555;
+            background-color: #333;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: #007bff;
+            border: none;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition-duration: 0.4s;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .btn.disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>the escape from hugo in a maze of death </h1>
+        <div id="status-bar">
+            <p>Health: <span id="health">100/100</span> | Inventory: <span id="inventory-list">None</span></p>
+        </div>
+        
+        <div id="game-text">You awaken in a damp, forgotten **Dungeon Cell**. The stone walls are slick with moisture. There is a small, rusty door to the east.</div>
+        
+        <div id="option-buttons" class="button-grid"><button class="btn">Examine the cell</button><button class="btn">Go east</button></div>
+    </div>
+
+    <!-- JavaScript Logic Inlined Here -->
+    <script>
+        const textElement = document.getElementById('game-text');
+        const optionButtonsElement = document.getElementById('option-buttons');
+        const healthElement = document.getElementById('health');
+        const inventoryElement = document.getElementById('inventory-list');
+
+        let state = {};
+
+        // Function to update the status bar
+        function updateStatus() {
+            healthElement.innerText = `${state.health}/100`;
+            inventoryElement.innerText = state.inventory.length > 0 ? state.inventory.join(', ') : 'None';
+        }
+
+        // The game world data (rooms/scenes)
+        const storyNodes = [
+            {
+                id: 'start',
+                text: 'You awaken in a damp, forgotten **Dungeon Cell**. The stone walls are slick with moisture. There is a small, rusty door to the east.',
+                options: [
+                    { text: 'Examine the cell', next: 'examine_cell' },
+                    { text: 'Go east', next: 'dungeon_hall' }
+                ]
+            },
+            {
+                id: 'examine_cell',
+                text: 'You search the straw on the ground and find a small, rusty **Key** hidden beneath a loose stone. You can now use it!',
+                options: [
+                    { text: 'Return to door', next: 'start' }
+                ],
+                onArrival: (state) => {
+                    if (!state.inventory.includes('Key')) {
+                        state.inventory.push('Key');
+                    }
+                }
+            },
+            {
+                id: 'dungeon_hall',
+                text: 'You enter a long, dark **Dungeon Hall**. Torches flicker on the walls. There are passages north and south. The cell is back west.',
+                options: [
+                    { text: 'Go north', next: 'cave_entrance' },
+                    { text: 'Go south', next: 'armory_door' },
+                    { text: 'Go west (back to cell)', next: 'start' },
+                    // EASTER EGG OPTION ADDED HERE
+                    { text: 'back the way you came ', next: 'secret_room' }
+                ]
+            },
+            {
+                id: 'secret_room',
+                text: 'this websit was made by Hugo cole, Adriaan Grobler, Thomas Bradbury . thanks for uesing it, tell outher aboute it . spread the good new .from the TopHAT group.',
+                options: [
+                    { text: 'get back to work ', next: 'dungeon_hall' }
+                ],
+                onArrival: (state) => {
+                    if (!state.inventory.includes('Shiny Pebble')) {
+                        state.inventory.push('Shiny Pebble');
+                    }
+                }
+            },
+            {
+                id: 'armory_door',
+                text: 'You find a heavy, locked **Armory Door**. It requires a key.',
+                options: [
+                    { 
+                        text: 'Use the Key', 
+                        requiredItem: 'Key',
+                        next: 'armory' 
+                    },
+                    { text: 'Go north (back to hall)', next: 'dungeon_hall' }
+                ]
+            },
+            {
+                id: 'armory',
+                text: 'You unlocked the door! Inside the dusty **Armory**, you find a **Rusty Sword** and a small health potion. You feel stronger.',
+                options: [
+                    { text: 'Continue to Hall', next: 'dungeon_hall' }
+                ],
+                onArrival: (state) => {
+                    if (!state.inventory.includes('Rusty Sword')) {
+                        state.inventory.push('Rusty Sword');
+                        state.health += 10;
+                    }
+                }
+            },
+            {
+                id: 'cave_entrance',
+                text: 'You are at the **Cave Entrance**. The air is cold and a growl echoes from within. The dungeon hall is to the south.',
+                options: [
+                    { text: 'Enter the deep cave', next: 'deep_cave_fight' },
+                    { text: 'Go south (back to hall)', next: 'dungeon_hall' }
+                ]
+            },
+            {
+                id: 'deep_cave_fight',
+                text: 'A giant troll blocks the path! It attacks you! Your health drops slightly as you fight.',
+                options: [
+                    { 
+                        text: 'Fight the Troll with Sword',
+                        requiredItem: 'Rusty Sword',
+                        next: 'victory_exit'
+                    },
+                    {
+                        text: 'Flee back to entrance',
+                        next: 'cave_entrance',
+                        onSelect: (state) => { state.health -= 20; }
+                    },
+                    {
+                        text: 'Fight with bare hands (Bad Idea!)',
+                        next: 'game_over'
+                    }
+                ],
+                onArrival: (state) => { state.health -= 15; }
+            },
+            {
+                id: 'game_over',
+                text: 'You fought bravely, but without a weapon, the troll easily defeated you. **GAME OVER.**',
+                options: [
+                    { text: 'Restart Game', next: 'start' }
+                ]
+            },
+            {
+                id: 'victory_exit',
+                text: 'You swing your Rusty Sword and defeat the troll! The path is clear. You find an exit to the surface. **YOU WIN!** The mysterious **Shiny Pebble** glows warmly in your pocket.',
+                options: [
+                    { text: 'Play Again', next: 'start' }
+                ]
+            },
+
+        ];
+
+        function startGame() {
+            state = {
+                health: 100,
+                inventory: []
+            };
+            showNode('start');
+            updateStatus();
+        }
+
+        function showNode(storyNodeId) {
+            const storyNode = storyNodes.find(node => node.id === storyNodeId);
+            
+            if (state.health <= 0 && storyNodeId !== 'game_over') {
+                showNode('game_over');
+                return;
+            }
+
+            textElement.innerText = storyNode.text;
+
+            if (storyNode.onArrival) {
+                storyNode.onArrival(state);
+            }
+            
+            updateStatus();
+            
+            while (optionButtonsElement.firstChild) {
+                optionButtonsElement.removeChild(optionButtonsElement.firstChild);
+            }
+
+            storyNode.options.forEach(option => {
+                const button = document.createElement('button');
+                button.innerText = option.text;
+                button.classList.add('btn');
+
+                const isDisabled = option.requiredItem && !state.inventory.includes(option.requiredItem);
+                if (isDisabled) {
+                    button.classList.add('disabled');
+                } else {
+                   button.addEventListener('click', () => selectOption(option));
+                }
+                
+                optionButtonsElement.appendChild(button);
+            });
+        }
+
+        function selectOption(option) {
+            if (option.onSelect) {
+                option.onSelect(state);
+            }
+
+            const nextNodeId = option.next;
+            if (nextNodeId === 'start') {
+                startGame();
+            } else {
+                showNode(nextNodeId);
+            }
+        }
+
+        // Start the game when the script loads
+        startGame();
+    </script>
+
+
+</body></html>
